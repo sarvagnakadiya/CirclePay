@@ -1,6 +1,12 @@
 import { getPublicClient } from "@wagmi/core";
 import { config } from "@/app/utils/config";
-import { mainnet } from "@wagmi/core/chains";
+import {
+  mainnet,
+  arbitrum,
+  optimism,
+  polygon,
+  arbitrumSepolia,
+} from "@wagmi/core/chains";
 
 import { type Chain } from "viem";
 export const local = {
@@ -13,24 +19,35 @@ export const local = {
   blockExplorers: {
     default: { name: "Etherscan", url: "https://etherscan.io" },
   },
-  contracts: {
-    ensRegistry: {
-      address: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
-    },
-    ensUniversalResolver: {
-      address: "0xE4Acdd618deED4e6d2f03b9bf62dc6118FC9A4da",
-      blockCreated: 16773775,
-    },
-    multicall3: {
-      address: "0xca11bde05977b3631167028862be2a173976ca11",
-      blockCreated: 14353601,
-    },
-  },
 } as const satisfies Chain;
 
-export const initializeClient = () => {
-  const client = getPublicClient(config, {
-    chainId: mainnet.id,
-  });
+// Define a union type of allowed chain IDs
+type AllowedChainIds =
+  | typeof arbitrum.id
+  | typeof optimism.id
+  | typeof polygon.id
+  | typeof arbitrumSepolia.id
+  | typeof mainnet.id;
+
+// Utility function to initialize a client for a specific chain
+export const initializeClient = (chainId: AllowedChainIds) => {
+  const client = getPublicClient(config, { chainId });
   return client;
+};
+
+// Example usage: initializing clients for different chains
+export const initializeClientsForAllChains = () => {
+  const arbitrumClient = initializeClient(arbitrum.id);
+  const optimismClient = initializeClient(optimism.id);
+  const polygonClient = initializeClient(polygon.id);
+  const mainnetClient = initializeClient(mainnet.id);
+  const arbitrumSepoliaClient = initializeClient(arbitrumSepolia.id);
+
+  return {
+    polygonClient,
+    arbitrumClient,
+    mainnetClient,
+    optimismClient,
+    arbitrumSepoliaClient,
+  };
 };

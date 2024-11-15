@@ -9,7 +9,7 @@ import { Providers } from "../app/Providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "CirclePay",
+  title: "Gasless USDC transfers",
   description: "Gasless USDC transfers powered by EIP-3009",
 };
 
