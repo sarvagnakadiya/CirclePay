@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "CirclePay",
-  description: "CirclePay - gasless Usdc transfers",
+  description: "Gasless USDC transfers powered by EIP-3009",
 };
 
 export default function RootLayout({

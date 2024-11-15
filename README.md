@@ -1,1 +1,0 @@
-This is a starter template with some integrated pages!
