@@ -23,6 +23,7 @@ import {
   CIRCLEPAY_BASE,
   getContractAddress,
 } from "@/app/utils/contractAddresses";
+import toast, { Toaster } from "react-hot-toast";
 
 interface Campaign {
   id: string;
@@ -105,6 +106,7 @@ const AdCampaignDashboard: React.FC = () => {
   const [isParticipating, setIsParticipating] = useState<boolean>(false);
   const { writeContractAsync } = useWriteContract();
   const { address, isConnected } = useAccount();
+  const [blockScoutUrl, setblockScoutUrl] = useState("");
 
   const handleAddReserve = (campaignId: string, amount: string): void => {
     setCampaigns(
@@ -197,6 +199,9 @@ const AdCampaignDashboard: React.FC = () => {
         args: ["abctestid"],
         value: BigInt(parseEther(initialFund.toString())),
       });
+
+      const theUrl = `https://base-sepolia.blockscout.com/tx/${tx}`;
+      setblockScoutUrl(theUrl);
 
       const receipt = await clientRef.current.waitForTransactionReceipt({
         hash: tx,
@@ -454,6 +459,18 @@ const AdCampaignDashboard: React.FC = () => {
           >
             Create Campaign
           </Button>
+          {blockScoutUrl == "" ? (
+            <></>
+          ) : (
+            <>
+              <Button
+                className="w-full justify-center mt-4 bg-gray-600"
+                onClick={() => window.open(blockScoutUrl, "_blank")}
+              >
+                View transaction ↗️
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </div>

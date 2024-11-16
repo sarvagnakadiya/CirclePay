@@ -37,6 +37,7 @@ const SponsorTab: React.FC<SponsorTabProps> = ({ setActiveTab }) => {
   const [processingId, setProcessingId] = useState<string>("");
   const { address, isConnected } = useAccount();
   const clientRef = useRef<PublicClient | null>(null);
+  const [blockScoutUrl, setblockScoutUrl] = useState("");
 
   useEffect(() => {
     const setupClient = async () => {
@@ -131,6 +132,9 @@ const SponsorTab: React.FC<SponsorTabProps> = ({ setActiveTab }) => {
           sign,
         ],
       });
+
+      const theUrl = `https://base-sepolia.blockscout.com/tx/${tx}`;
+      setblockScoutUrl(theUrl);
 
       const receipt = await clientRef.current.waitForTransactionReceipt({
         hash: tx,
@@ -288,7 +292,7 @@ const SponsorTab: React.FC<SponsorTabProps> = ({ setActiveTab }) => {
               Spread Joy, Pay Their Way! 🤝
             </h1>
             <p className="text-gray-600 mt-2">
-              Be the spark that lights someone's day - cover their gas, make
+              Be the spark that lights someones day - cover their gas, make
               their transaction play ✨
             </p>
           </div>

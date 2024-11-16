@@ -45,7 +45,7 @@ Additional Benefits:
 Savings Potential:
 
 
-        By eliminating transaction fees, USDCPay can help users save billions in fees annually. Global blockchain transaction fees are projected to reach $36.5 billion by 2030, and our platform can significantly reduce these costs for USDC transfers for the end users.
+        By eliminating transaction fees, CirclePay can help users save billions in fees annually. Global blockchain transaction fees are projected to reach $36.5 billion by 2030, and our platform can significantly reduce these costs for USDC transfers for the end users.
 
 Mass Market Reach:
         
