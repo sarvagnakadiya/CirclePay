@@ -5,6 +5,7 @@ import {
   optimism,
   polygon,
   arbitrumSepolia,
+  baseSepolia,
 } from "@wagmi/core/chains";
 import { type Chain } from "viem";
 export const local = {
@@ -27,7 +28,7 @@ import {
 } from "@wagmi/connectors";
 
 export const config = createConfig({
-  chains: [mainnet, arbitrum, optimism, polygon, arbitrumSepolia],
+  chains: [mainnet, arbitrum, optimism, polygon, arbitrumSepolia, baseSepolia],
   // connectors: [injected(), coinbaseWallet(), metaMask(), safe()],
   connectors: [injected()],
   transports: {
@@ -36,6 +37,7 @@ export const config = createConfig({
     [optimism.id]: http(),
     [polygon.id]: http(),
     [arbitrumSepolia.id]: http(),
+    [baseSepolia.id]: http(),
 
     // [local.id]: http("http://127.0.0.1:8545"),
   },

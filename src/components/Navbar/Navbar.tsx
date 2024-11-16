@@ -15,7 +15,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
 
 const navigation = [
-  { name: "GasLess⛽️", href: "/", current: true },
+  { name: "CirclePay ⛽️", href: "/", current: true },
   //   { name: "profile", href: "/user/:address", current: false },
   //   { name: "Projects", href: "/projects", current: false },
   //   { name: "Calendar", href: "#", current: false },

@@ -5,6 +5,7 @@ import {
   optimism,
   polygon,
   arbitrumSepolia,
+  baseSepolia
 } from "@wagmi/core/chains";
 
 import { type Chain } from "viem";
@@ -31,6 +32,7 @@ export const config = getDefaultConfig({
     arbitrum,
     optimism,
     polygon,
+    baseSepolia,
     ...(process.env.NEXT_PUBLIC_ENABLE_TESTNETS === "true" ? [arbitrumSepolia] : [arbitrum]),
   ],
   ssr: true,

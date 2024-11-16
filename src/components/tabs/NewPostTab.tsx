@@ -63,6 +63,8 @@ export default function NewPostTab() {
   const handleSign = async () => {
     setIsLoading(true);
     const chainId = getChainId(config);
+    console.log(chainId);
+    console.log(getContractAddress(chainId) as Address);
 
     try {
       const theNonce = await generateNonce();
@@ -93,7 +95,7 @@ export default function NewPostTab() {
           ],
         },
         domain: {
-          name: "USD Coin",
+          name: "USDC",
           version: "2",
           chainId: BigInt(chainId),
           verifyingContract: getContractAddress(chainId) as Address,

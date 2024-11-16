@@ -6,6 +6,7 @@ import {
   optimism,
   polygon,
   arbitrumSepolia,
+  baseSepolia,
 } from "@wagmi/core/chains";
 
 import { type Chain } from "viem";
@@ -27,6 +28,7 @@ type AllowedChainIds =
   | typeof optimism.id
   | typeof polygon.id
   | typeof arbitrumSepolia.id
+  | typeof baseSepolia.id
   | typeof mainnet.id;
 
 // Utility function to initialize a client for a specific chain
@@ -42,6 +44,7 @@ export const initializeClientsForAllChains = () => {
   const polygonClient = initializeClient(polygon.id);
   const mainnetClient = initializeClient(mainnet.id);
   const arbitrumSepoliaClient = initializeClient(arbitrumSepolia.id);
+  const baseSepoliaClient = initializeClient(baseSepolia.id);
 
   return {
     polygonClient,
@@ -49,5 +52,6 @@ export const initializeClientsForAllChains = () => {
     mainnetClient,
     optimismClient,
     arbitrumSepoliaClient,
+    baseSepoliaClient,
   };
 };

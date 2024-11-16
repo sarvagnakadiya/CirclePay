@@ -1,7 +1,14 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useAccount, useWriteContract } from "wagmi";
 import { Address, pad, PublicClient } from "viem";
-import { CheckCircle2, ArrowRight, Clock, Wallet, Loader2 } from "lucide-react";
+import {
+  CheckCircle2,
+  ArrowRight,
+  Clock,
+  Wallet,
+  Loader2,
+  Search,
+} from "lucide-react";
 import contractABI from "@/usdc.json";
 import { initializeClient } from "@/app/utils/publicClient";
 import { getChainId } from "@wagmi/core";
@@ -12,7 +19,11 @@ import { Transaction } from "@/types/transaction";
 const SponsorTab: React.FC = () => {
   const { writeContractAsync } = useWriteContract();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [filteredTransactions, setFilteredTransactions] = useState<
+    Transaction[]
+  >([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const [chainId, setChainId] = useState<number>(0);
   const [isParticipating, setIsParticipating] = useState<boolean>(false);
   const [processingId, setProcessingId] = useState<string>("");
@@ -40,6 +51,7 @@ const SponsorTab: React.FC = () => {
         }
         const data: Transaction[] = await response.json();
         setTransactions(data);
+        setFilteredTransactions(data);
       } catch (error) {
         console.error("Error fetching transactions:", error);
       } finally {
@@ -49,6 +61,21 @@ const SponsorTab: React.FC = () => {
 
     fetchTransactions();
   }, []);
+
+  useEffect(() => {
+    const lowercasedTerm = searchTerm.toLowerCase();
+    setFilteredTransactions(
+      transactions.filter(
+        (transaction) =>
+          transaction.sender.toLowerCase().includes(lowercasedTerm) ||
+          transaction.receiver.toLowerCase().includes(lowercasedTerm)
+      )
+    );
+  }, [searchTerm, transactions]);
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
 
   const handleTransfer = async (
     from: string,
@@ -145,22 +172,8 @@ const SponsorTab: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-              {[1, 2].map((i) => (
-                <div key={i} className="bg-white rounded-xl p-6 space-y-4">
-                  <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-                  <div className="h-20 bg-gray-200 rounded"></div>
-                  <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+      <div className="min-h-screen bg-gray-50 p-6 flex justify-center items-center">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
       </div>
     );
   }
@@ -168,8 +181,8 @@ const SponsorTab: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header Section */}
-        <div className="flex items-center justify-between">
+        {/* Header Section with Search */}
+        <div className="flex items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
               Transaction Sponsor Portal
@@ -180,7 +193,19 @@ const SponsorTab: React.FC = () => {
           </div>
           <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full">
             <Clock className="w-5 h-5" />
-            <span className="font-medium">{transactions.length} Pending</span>
+            <span className="font-medium">
+              {filteredTransactions.length} Pending
+            </span>
+          </div>
+          <div className="flex items-center bg-white shadow-sm rounded-lg px-4 py-2">
+            <Search className="text-gray-400 w-5 h-5 mr-2" />
+            <input
+              type="text"
+              placeholder="Search by address"
+              value={searchTerm}
+              onChange={handleSearch}
+              className="w-full bg-transparent focus:outline-none text-gray-700"
+            />
           </div>
         </div>
 
@@ -195,20 +220,20 @@ const SponsorTab: React.FC = () => {
         )}
 
         {/* Empty State */}
-        {transactions.length === 0 ? (
+        {filteredTransactions.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-16 text-center">
             <CheckCircle2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-700 mb-2">
-              No Pending Transactions
+              No Matching Transactions
             </h3>
             <p className="text-gray-500">
-              Check back later for new opportunities to participate
+              Try a different address or check back later.
             </p>
           </div>
         ) : (
           /* Transaction Grid */
           <div className="grid gap-6 md:grid-cols-2">
-            {transactions
+            {filteredTransactions
               .slice()
               .reverse()
               .map((transaction) => (
@@ -242,71 +267,42 @@ const SponsorTab: React.FC = () => {
                     <div className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="bg-white p-2 rounded-full shadow-sm">
-                            <Wallet className="w-5 h-5 text-gray-500" />
+                          <div className="text-xs text-gray-500 font-medium">
+                            From
                           </div>
-                          <div>
-                            <p className="text-sm text-gray-500">From</p>
-                            <div className="flex items-center gap-2">
-                              <code className="font-mono font-medium text-gray-900">
-                                {formatAddress(transaction.sender)}
-                              </code>
-                              {transaction.sender === address && (
-                                <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs">
-                                  You
-                                </span>
-                              )}
-                            </div>
+                          <div className="font-semibold text-gray-800">
+                            {formatAddress(transaction.sender)}
                           </div>
                         </div>
-                        <ArrowRight className="w-5 h-5 text-gray-400" />
-                        <div>
-                          <p className="text-sm text-gray-500">To</p>
-                          <div className="flex items-center gap-2">
-                            <code className="font-mono font-medium text-gray-900">
-                              {formatAddress(transaction.receiver)}
-                            </code>
-                            {transaction.receiver === address && (
-                              <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs">
-                                You
-                              </span>
-                            )}
+                        <ArrowRight className="text-gray-400" />
+                        <div className="flex items-center gap-3">
+                          <div className="text-xs text-gray-500 font-medium">
+                            To
+                          </div>
+                          <div className="font-semibold text-gray-800">
+                            {formatAddress(transaction.receiver)}
                           </div>
                         </div>
+                      </div>
+                      <div className="text-right mt-2 font-bold text-blue-700">
+                        {formatAmount(transaction.amount)} USDC
                       </div>
                     </div>
 
-                    {/* Amount and Action */}
-                    <div className="flex justify-between items-center pt-4 border-t">
-                      <div>
-                        <p className="text-sm text-gray-500">Amount</p>
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-2xl font-bold text-gray-900">
-                            {formatAmount(transaction.amount)}
-                          </span>
-                          <span className="text-gray-500">USDC</span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleExecute(transaction)}
-                        disabled={isParticipating}
-                        className={`px-6 py-3 rounded-lg font-medium transition-all
-                          ${
-                            isParticipating && processingId === transaction._id
-                              ? "bg-blue-100 text-blue-400 cursor-not-allowed"
-                              : "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800"
-                          }`}
-                      >
-                        {isParticipating && processingId === transaction._id ? (
-                          <span className="flex items-center gap-2">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Processing
-                          </span>
-                        ) : (
-                          "Execute Transaction"
-                        )}
-                      </button>
-                    </div>
+                    {/* Execute Button */}
+                    <button
+                      onClick={() => handleExecute(transaction)}
+                      disabled={
+                        processingId === transaction._id || isParticipating
+                      }
+                      className="w-full text-white bg-blue-600 hover:bg-blue-700 transition-all py-2 px-4 rounded-lg font-semibold"
+                    >
+                      {processingId === transaction._id ? (
+                        <Loader2 className="animate-spin w-5 h-5 mx-auto" />
+                      ) : (
+                        "Execute Transaction"
+                      )}
+                    </button>
                   </div>
                 </div>
               ))}

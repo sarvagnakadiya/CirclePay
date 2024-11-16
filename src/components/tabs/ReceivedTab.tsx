@@ -245,7 +245,7 @@ const ReceivedTab: React.FC = () => {
               No Pending Transactions
             </h3>
             <p className="text-gray-500">
-              You dont have any pending transactions to execute
+              You don't have any pending transactions to execute
             </p>
           </div>
         ) : activeTab === "executed" && executedTransactions.length === 0 ? (
@@ -255,7 +255,7 @@ const ReceivedTab: React.FC = () => {
               No Executed Transactions
             </h3>
             <p className="text-gray-500">
-              You havent executed any transactions yet
+              You haven't executed any transactions yet
             </p>
           </div>
         ) : (
