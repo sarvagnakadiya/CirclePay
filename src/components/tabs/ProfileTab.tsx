@@ -9,7 +9,7 @@ import {
   Copy,
   Play,
 } from "lucide-react";
-import blockies from "blockies-ts"; // Using blockies for generating the profile picture
+import blockies from "blockies-ts";
 
 const ProfileTab: React.FC = () => {
   const { address, isConnected } = useAccount();
