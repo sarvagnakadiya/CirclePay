@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   PlayCircle,
   DollarSign,
@@ -10,6 +10,14 @@ import {
   Clock,
   BarChart,
 } from "lucide-react";
+import { initializeClient } from "@/app/utils/publicClient";
+import contractABI from "@/CirclePay.json";
+
+import { getChainId } from "@wagmi/core";
+import { config } from "@/app/utils/config";
+import { Address, formatEther, pad, PublicClient } from "viem";
+import { useAccount, useWriteContract } from "wagmi";
+import { getContractAddress } from "@/app/utils/contractAddresses";
 
 interface Campaign {
   id: string;
@@ -75,24 +83,22 @@ const formatDate = (dateString: string): string => {
 const AdCampaignDashboard: React.FC = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([
     {
-      id: "CAM001",
-      thumbnail: "/api/placeholder/320/180",
-      reserve: 5000,
-      delivered: 12500,
+      id: "0xc92a16fa64c781fe8a292fedf42bd069dedadd5478263c43ba5d5e9a2d4ef41f",
+      thumbnail: "",
+      reserve: 9999999999900000,
+      delivered: 3,
       status: "active",
       startDate: "2024-03-15",
-    },
-    {
-      id: "CAM002",
-      thumbnail: "/api/placeholder/320/180",
-      reserve: 3200,
-      delivered: 8900,
-      status: "active",
-      startDate: "2024-03-10",
     },
   ]);
 
   const [showAddReserve, setShowAddReserve] = useState<string | null>(null);
+  const [chainId, setChainId] = useState<number>(0);
+  const clientRef = useRef<PublicClient | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const { address, isConnected } = useAccount();
+  const [isParticipating, setIsParticipating] = useState<boolean>(false);
+  const { writeContractAsync } = useWriteContract();
 
   const handleAddReserve = (campaignId: string, amount: string): void => {
     setCampaigns(
@@ -114,6 +120,85 @@ const AdCampaignDashboard: React.FC = () => {
       case "completed":
         return "bg-gray-100 text-gray-700";
     }
+  };
+
+  useEffect(() => {
+    const setupClient = async () => {
+      try {
+        const currentChainId = getChainId(config);
+        console.log(currentChainId);
+        setChainId(currentChainId);
+        const newClient = initializeClient(currentChainId);
+        clientRef.current = newClient as PublicClient;
+      } catch (error) {
+        console.error("Error initializing client:", error);
+      }
+    };
+
+    setupClient();
+    const fetchTransactions = async () => {
+      try {
+        const response = await fetch(
+          `/api/transactions?userAddress=${address}`
+        );
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+      } catch (error) {
+        console.error("Error fetching transactions:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTransactions();
+  }, []);
+
+  const handleCreateCampaign = async () => {
+    if (!isConnected) {
+      alert("Please connect your account to participate.");
+      return;
+    }
+    try {
+      if (!clientRef.current) {
+        alert("Client not initialized. Please try again.");
+        return;
+      }
+      setIsParticipating(true);
+      const tx = await writeContractAsync({
+        address: getContractAddress(chainId) as Address,
+        account: address,
+        abi: contractABI.abi,
+        functionName: "registerCampaign",
+        args: ["abctestid"],
+      });
+
+      const receipt = await clientRef.current.waitForTransactionReceipt({
+        hash: tx,
+      });
+
+      if (receipt) {
+        const bytesId =
+          "0xc92a16fa64c781fe8a292fedf42bd069dedadd5478263c43ba5d5e9a2d4ef41f";
+        await fetch("/api/create-campaign", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            bytesId,
+            address,
+            showAddReserve,
+          }),
+        });
+        setIsParticipating(false);
+      }
+    } catch (error) {
+      console.error("Error participating:", error);
+    } finally {
+      setIsParticipating(false);
+    }
+    console.log("hello from fn");
   };
 
   return (
@@ -179,15 +264,15 @@ const AdCampaignDashboard: React.FC = () => {
 
                     <div className="flex gap-8">
                       <div className="flex items-center gap-3 bg-indigo-50 rounded-lg p-3">
-                        <span className="text-indigo-600 bg-indigo-100 p-2 rounded-lg">
+                        {/* <span className="text-indigo-600 bg-indigo-100 p-2 rounded-lg">
                           <DollarSign size={20} />
-                        </span>
+                        </span> */}
                         <div>
                           <p className="text-sm font-medium text-indigo-900">
                             Funds Reserve
                           </p>
                           <p className="text-lg font-semibold text-indigo-700">
-                            ${campaign.reserve.toLocaleString()}
+                            {formatEther(BigInt(campaign.reserve))} eth
                           </p>
                         </div>
                       </div>
@@ -260,54 +345,58 @@ const AdCampaignDashboard: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-8">
             Create New Campaign
           </h2>
-          <form className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Campaign Video
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Campaign Video
+            </label>
+            <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center bg-gray-50 hover:bg-gray-100 transition-colors">
+              <Input
+                type="file"
+                accept="video/*"
+                className="hidden"
+                id="video-upload"
+              />
+              <label
+                htmlFor="video-upload"
+                className="cursor-pointer flex flex-col items-center gap-3"
+              >
+                <PlusCircle className="w-10 h-10 text-indigo-500" />
+                <div>
+                  <p className="text-sm font-medium text-gray-700">
+                    Click to upload video
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    MP4, WebM or OGG (Max. 800MB)
+                  </p>
+                </div>
               </label>
-              <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center bg-gray-50 hover:bg-gray-100 transition-colors">
-                <Input
-                  type="file"
-                  accept="video/*"
-                  className="hidden"
-                  id="video-upload"
-                />
-                <label
-                  htmlFor="video-upload"
-                  className="cursor-pointer flex flex-col items-center gap-3"
-                >
-                  <PlusCircle className="w-10 h-10 text-indigo-500" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">
-                      Click to upload video
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      MP4, WebM or OGG (Max. 800MB)
-                    </p>
-                  </div>
-                </label>
-              </div>
             </div>
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Initial Reserve Amount
-              </label>
-              <div className="flex gap-2">
-                <Input
-                  type="number"
-                  placeholder="Enter amount"
-                  className="flex-1"
-                />
-                <Button>
-                  <Plus size={18} />
-                  Add Reserve
-                </Button>
-              </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Initial Reserve Amount
+            </label>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                placeholder="Enter amount"
+                className="flex-1"
+              />
+              {/* <Button>
+                <Plus size={18} />
+                Add Reserve
+              </Button> */}
             </div>
+          </div>
+          <br></br>
 
-            <Button className="w-full justify-center">Create Campaign</Button>
-          </form>
+          <Button
+            onClick={() => handleCreateCampaign()}
+            className="w-full justify-center"
+          >
+            Create Campaign
+          </Button>
         </div>
       </div>
     </div>
