@@ -6,6 +6,8 @@ export const CONTRACT_ADDRESSES: { [key: number]: string } = {
   };
 
   export const CIRCLEPAY_BASE = "0xca31f2E4A6595586A617Ae6bf194EfcB243C187e";
+  export const CIRCLEPAY_ARB = "0xca31f2E4A6595586A617Ae6bf194EfcB243C187e";
+  export const CIRCLEPAY_OP = "0xca31f2E4A6595586A617Ae6bf194EfcB243C187e";
   
   export const getContractAddress = (chainId: number): string | undefined => {
     return CONTRACT_ADDRESSES[chainId];
