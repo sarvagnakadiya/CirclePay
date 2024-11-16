@@ -20,11 +20,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const campaignData = {
+      id,
+      owner,
+      reserve,
+    };
+
     // Connect to MongoDB and insert the data
     await client.connect();
     const db = client.db(dbName);
     const collection = db.collection(collectionName);
-    const result = await collection.insertOne({ id, owner, reserve });
+    const result = await collection.insertOne(campaignData);
 
     // Respond with success
     return NextResponse.json({

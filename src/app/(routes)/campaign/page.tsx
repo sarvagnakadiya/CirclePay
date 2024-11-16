@@ -10,12 +10,14 @@ import {
   Clock,
   BarChart,
 } from "lucide-react";
+import ethers from "ethers";
+import { decodeEventLog, toEventSignature } from "viem";
 import { initializeClient } from "@/app/utils/publicClient";
 import contractABI from "@/CirclePay.json";
 
 import { getChainId } from "@wagmi/core";
 import { config } from "@/app/utils/config";
-import { Address, formatEther, pad, PublicClient } from "viem";
+import { Address, formatEther, pad, parseEther, PublicClient } from "viem";
 import { useAccount, useWriteContract } from "wagmi";
 import {
   CIRCLEPAY_BASE,
@@ -100,9 +102,9 @@ const AdCampaignDashboard: React.FC = () => {
   const [initialFund, setInitialFund] = useState<number>(0);
   const clientRef = useRef<PublicClient | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const { address, isConnected } = useAccount();
   const [isParticipating, setIsParticipating] = useState<boolean>(false);
   const { writeContractAsync } = useWriteContract();
+  const { address, isConnected } = useAccount();
 
   const handleAddReserve = (campaignId: string, amount: string): void => {
     setCampaigns(
@@ -130,7 +132,6 @@ const AdCampaignDashboard: React.FC = () => {
     const setupClient = async () => {
       try {
         const currentChainId = getChainId(config);
-        console.log(currentChainId);
         setChainId(currentChainId);
         const newClient = initializeClient(currentChainId);
         clientRef.current = newClient as PublicClient;
@@ -140,35 +141,53 @@ const AdCampaignDashboard: React.FC = () => {
     };
 
     setupClient();
-    const fetchTransactions = async () => {
+
+    const fetchCampaigns = async () => {
+      if (!address) return;
+
+      setLoading(true);
       try {
-        const response = await fetch(
-          `/api/transactions?userAddress=${address}`
-        );
+        const response = await fetch(`/api/get-campaigns?owner=${address}`);
         if (!response.ok) {
-          throw new Error("Network response was not ok");
+          throw new Error("Failed to fetch campaigns");
         }
+        const data = await response.json();
+
+        // Transform API data to match Campaign interface
+        const formattedCampaigns: Campaign[] = data.map((item: any) => ({
+          id: item.id,
+          thumbnail: item.thumbnail || "", // Use default empty string if no thumbnail
+          reserve: item.reserve.toString(), // Convert to string to handle large numbers
+          delivered: item.delivered || 0,
+          status: item.status || "active",
+          startDate: item.createdAt || new Date().toISOString(),
+          owner: item.owner,
+        }));
+
+        setCampaigns(formattedCampaigns);
       } catch (error) {
-        console.error("Error fetching transactions:", error);
+        console.error("Error fetching campaigns:", error);
+        alert("Failed to fetch campaigns. Please try again later.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTransactions();
-  }, []);
+    fetchCampaigns();
+  }, [address]);
 
   const handleCreateCampaign = async () => {
-    console.log("ander aaya");
     if (!isConnected) {
       alert("Please connect your account to participate.");
       return;
     }
+
     try {
       if (!clientRef.current) {
         alert("Client not initialized. Please try again.");
         return;
       }
+
       setIsParticipating(true);
       const tx = await writeContractAsync({
         address: CIRCLEPAY_BASE,
@@ -176,35 +195,59 @@ const AdCampaignDashboard: React.FC = () => {
         abi: contractABI.abi,
         functionName: "registerCampaign",
         args: ["abctestid"],
-        value: BigInt(initialFund),
+        value: BigInt(parseEther(initialFund.toString())),
       });
 
       const receipt = await clientRef.current.waitForTransactionReceipt({
         hash: tx,
       });
 
-      if (receipt) {
-        const bytesId =
-          "0xc92a16fa64c781fe8a292fedf42bd069dedadd5478263c43ba5d5e9a2d4ef41f";
-        await fetch("/api/create-campaign", {
+      const eventTopic =
+        "0xa5ad0d6d3cd789710276999982a8c0d3afbbf7ba34e7ccb419748e4fd4dafef0";
+      const event = receipt.logs.find((log) => log.topics[0] === eventTopic);
+
+      if (event && receipt) {
+        const bytesId = event.data.slice(0, 66);
+        const value = BigInt(parseEther(initialFund.toString())).toString();
+
+        const response = await fetch("/api/create-campaign", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            bytesId,
-            address,
-            showAddReserve,
+            id: bytesId,
+            owner: address,
+            reserve: value,
           }),
         });
-        setIsParticipating(false);
+
+        if (response.ok) {
+          // Fetch updated campaigns after successful creation
+          const updatedResponse = await fetch(
+            `/api/get-campaigns?owner=${address}`
+          );
+          const updatedData = await updatedResponse.json();
+          const formattedCampaigns: Campaign[] = updatedData.map(
+            (item: any) => ({
+              id: item.id,
+              thumbnail: item.thumbnail || "",
+              reserve: item.reserve.toString(),
+              delivered: item.delivered || 0,
+              status: item.status || "active",
+              startDate: item.createdAt || new Date().toISOString(),
+              owner: item.owner,
+            })
+          );
+          setCampaigns(formattedCampaigns);
+        }
       }
     } catch (error) {
-      console.error("Error participating:", error);
+      console.error("Error creating campaign:", error);
+      alert("Failed to create campaign. Please try again.");
     } finally {
       setIsParticipating(false);
     }
-    console.log("hello from fn");
   };
 
   return (
@@ -225,124 +268,135 @@ const AdCampaignDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid gap-6">
-          {campaigns.map((campaign) => (
-            <div
-              key={campaign.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200"
-            >
-              <div className="p-6">
-                <div className="flex items-start gap-6">
-                  {/* Thumbnail */}
-                  <div className="relative w-80 rounded-lg overflow-hidden group">
-                    <img
-                      src={campaign.thumbnail}
-                      alt={`Campaign ${campaign.id}`}
-                      className="w-full h-48 object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <PlayCircle size={48} className="text-white" />
-                    </div>
-                  </div>
-
-                  {/* Campaign Details */}
-                  <div className="flex-1 space-y-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            Campaign {campaign.id}
-                          </h3>
-                          <span
-                            className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                              campaign.status
-                            )}`}
-                          >
-                            {campaign.status.charAt(0).toUpperCase() +
-                              campaign.status.slice(1)}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-500">
-                          Started on {formatDate(campaign.startDate)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-8">
-                      <div className="flex items-center gap-3 bg-indigo-50 rounded-lg p-3">
-                        {/* <span className="text-indigo-600 bg-indigo-100 p-2 rounded-lg">
-                          <DollarSign size={20} />
-                        </span> */}
-                        <div>
-                          <p className="text-sm font-medium text-indigo-900">
-                            Funds Reserve
-                          </p>
-                          <p className="text-lg font-semibold text-indigo-700">
-                            {formatEther(BigInt(campaign.reserve))} eth
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3 bg-emerald-50 rounded-lg p-3">
-                        <span className="text-emerald-600 bg-emerald-100 p-2 rounded-lg">
-                          <Users size={20} />
-                        </span>
-                        <div>
-                          <p className="text-sm font-medium text-emerald-900">
-                            Delivered To
-                          </p>
-                          <p className="text-lg font-semibold text-emerald-700">
-                            {campaign.delivered.toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {showAddReserve === campaign.id ? (
-                      <div className="flex gap-2 items-center mt-4">
-                        <Input
-                          type="number"
-                          placeholder="Amount"
-                          className="w-auto"
-                          id={`reserve-${campaign.id}`}
+        {campaigns.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500">
+              No campaigns found. Create your first campaign!
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-6">
+            {campaigns.map((campaign) => (
+              <div
+                key={campaign.id}
+                className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200"
+              >
+                <div className="p-6">
+                  <div className="flex items-start gap-6">
+                    {/* Thumbnail */}
+                    <div className="relative w-80 rounded-lg overflow-hidden group">
+                      {campaign.thumbnail ? (
+                        <img
+                          src={campaign.thumbnail}
+                          alt={`Campaign ${campaign.id}`}
+                          className="w-full h-48 object-cover"
                         />
-                        <Button
-                          variant="success"
-                          className="w-auto"
-                          onClick={() => {
-                            const input = document.getElementById(
-                              `reserve-${campaign.id}`
-                            ) as HTMLInputElement;
-                            handleAddReserve(campaign.id, input.value);
-                          }}
-                        >
-                          <Plus size={18} />
-                          Add Funds
-                        </Button>
+                      ) : (
+                        <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-400">No thumbnail</span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <PlayCircle size={48} className="text-white" />
+                      </div>
+                    </div>
+
+                    {/* Campaign Details */}
+                    <div className="flex-1 space-y-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              Campaign {campaign.id.slice(0, 8)}...
+                            </h3>
+                            <span
+                              className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                                campaign.status
+                              )}`}
+                            >
+                              {campaign.status.charAt(0).toUpperCase() +
+                                campaign.status.slice(1)}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-500">
+                            Started on {formatDate(campaign.startDate)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-8">
+                        <div className="flex items-center gap-3 bg-indigo-50 rounded-lg p-3">
+                          <div>
+                            <p className="text-sm font-medium text-indigo-900">
+                              Funds Reserve
+                            </p>
+                            <p className="text-lg font-semibold text-indigo-700">
+                              {formatEther(BigInt(campaign.reserve))} eth
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 bg-emerald-50 rounded-lg p-3">
+                          <span className="text-emerald-600 bg-emerald-100 p-2 rounded-lg">
+                            <Users size={20} />
+                          </span>
+                          <div>
+                            <p className="text-sm font-medium text-emerald-900">
+                              Delivered To
+                            </p>
+                            <p className="text-lg font-semibold text-emerald-700">
+                              {campaign.delivered.toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {showAddReserve === campaign.id ? (
+                        <div className="flex gap-2 items-center mt-4">
+                          <Input
+                            type="number"
+                            placeholder="Amount"
+                            className="w-auto"
+                            id={`reserve-${campaign.id}`}
+                          />
+                          <Button
+                            variant="success"
+                            className="w-auto"
+                            onClick={() => {
+                              const input = document.getElementById(
+                                `reserve-${campaign.id}`
+                              ) as HTMLInputElement;
+                              handleAddReserve(campaign.id, input.value);
+                            }}
+                          >
+                            <Plus size={18} />
+                            Add Funds
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowAddReserve(null)}
+                          >
+                            <X size={18} />
+                            Cancel
+                          </Button>
+                        </div>
+                      ) : (
                         <Button
                           variant="outline"
-                          onClick={() => setShowAddReserve(null)}
+                          onClick={() => setShowAddReserve(campaign.id)}
+                          className="mt-4"
                         >
-                          <X size={18} />
-                          Cancel
+                          <Plus size={18} />
+                          Add Reserve
                         </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowAddReserve(campaign.id)}
-                        className="mt-4"
-                      >
-                        <Plus size={18} />
-                        Add Reserve
-                      </Button>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* New Campaign Form Section */}
@@ -385,16 +439,11 @@ const AdCampaignDashboard: React.FC = () => {
             </label>
             <div className="flex gap-2">
               <Input
-                onChange={(e) => setInitialFund(Number(e.target.value) || 0)} // Convert to number, default to 0 if invalid
+                onChange={(e) => setInitialFund(Number(e.target.value) || 0)}
                 type="number"
                 placeholder="Enter amount"
                 className="flex-1"
               />
-
-              {/* <Button>
-                <Plus size={18} />
-                Add Reserve
-              </Button> */}
             </div>
           </div>
           <br></br>

@@ -75,7 +75,7 @@ export default function NewPostTab() {
       setTimeout(() => {
         setIsFetchingVideo(false);
         setIsVideoReady(true);
-      }, Math.random() * 1000 + 2000); // Random time between 2-3 seconds
+      }, Math.random() * 1000 + 2000);
     } else {
       setIsVideoReady(false);
       setHasWatchedVideo(false);
@@ -438,10 +438,11 @@ export default function NewPostTab() {
           <div className="px-6 py-8">
             <div className="text-center mb-8">
               <h1 className="text-3xl font-bold text-gray-900">
-                USDC Gasless Transfer
+                Send USDC, Skip the Gas! ⛽️
               </h1>
               <p className="mt-2 text-gray-600">
-                Transfer USDC without paying gas fees
+                Let someone else handle the heavy lifting while you make the
+                magic happen
               </p>
             </div>
 
@@ -538,11 +539,16 @@ export default function NewPostTab() {
           <div className="flex items-start">
             <Info className="h-5 w-5 text-indigo-500 mt-0.5" />
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-gray-900">Need Help?</h3>
+              <h3 className="text-sm font-medium text-gray-900">
+                How Does This Magic Work? ✨
+              </h3>
               <p className="mt-1 text-sm text-gray-500">
-                This interface allows you to create a gasless USDC transfer
-                using EIP-712 signatures. The transfer can be executed at a
-                later time without requiring gas from the sender.
+                No gas, no stress! We use smart signature tech (
+                <span className="font-bold">EIP-712</span> &{" "}
+                <span className="font-bold">EIP-3009</span>) to let you create
+                USDC transfers that others can power up later. Think of it like
+                sending a pre-approved package - you pack it, someone else
+                delivers it!
               </p>
               {!isConnected && (
                 <p className="mt-2 text-sm text-indigo-600">

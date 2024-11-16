@@ -285,10 +285,11 @@ const SponsorTab: React.FC<SponsorTabProps> = ({ setActiveTab }) => {
         <div className="flex items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              Transaction Sponsor Portal
+              Spread Joy, Pay Their Way! 🤝
             </h1>
             <p className="text-gray-600 mt-2">
-              Execute pending transactions to earn rewards
+              Be the spark that lights someone's day - cover their gas, make
+              their transaction play ✨
             </p>
           </div>
           <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full">
