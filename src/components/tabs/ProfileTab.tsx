@@ -153,7 +153,7 @@ const ProfileTab: React.FC = () => {
               No Transactions Found
             </h3>
             <p className="text-gray-500">
-              You haven't initiated or received any transactions yet.
+              You havent initiated or received any transactions yet.
             </p>
           </div>
         ) : (
