@@ -15,8 +15,13 @@ import { getChainId } from "@wagmi/core";
 import { config } from "@/app/utils/config";
 import { getContractAddress } from "@/app/utils/contractAddresses";
 import { Transaction } from "@/types/transaction";
+import { Button } from "@headlessui/react";
 
-const SponsorTab: React.FC = () => {
+interface SponsorTabProps {
+  setActiveTab: React.Dispatch<React.SetStateAction<number>>;
+}
+
+const SponsorTab: React.FC<SponsorTabProps> = ({ setActiveTab }) => {
   const { writeContractAsync } = useWriteContract();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<
@@ -229,6 +234,8 @@ const SponsorTab: React.FC = () => {
             <p className="text-gray-500">
               Try a different address or check back later.
             </p>
+            <button className="bg-blue-50 text-blue-700 px-4 py-2 rounded-full hover:bg-blue-100 my-4" onClick={() => setActiveTab(3)}> Send Token</button>
+
           </div>
         ) : (
           /* Transaction Grid */
@@ -240,10 +247,9 @@ const SponsorTab: React.FC = () => {
                 <div
                   key={transaction._id}
                   className={`bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-200
-                    ${
-                      processingId === transaction._id
-                        ? "ring-2 ring-blue-500"
-                        : "hover:shadow-md"
+                    ${processingId === transaction._id
+                      ? "ring-2 ring-blue-500"
+                      : "hover:shadow-md"
                     }`}
                 >
                   <div className="p-6 space-y-6">

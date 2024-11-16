@@ -7,7 +7,8 @@ import { initializeClient } from "@/app/utils/publicClient";
 import { useAccount } from "wagmi";
 import axios from "axios";
 import { getContractAddress } from "@/app/utils/contractAddresses";
-import { Calendar, Info, Wallet, ArrowRight } from "lucide-react";
+import { Calendar, Info, Wallet, ArrowRight, Network, Send } from "lucide-react";
+import SelectWithIcons from "./SelectWithIcons";
 
 export default function NewPostTab() {
   const [from, setFrom] = useState("");
@@ -22,8 +23,16 @@ export default function NewPostTab() {
   const [signature, setSignature] = useState("");
   const { address, isConnected } = useAccount();
   const [chainId, setChainId] = useState<number>(0);
-
+  const [chainName, setChainName] = useState<string>("base");
+  const [receiversChainId, SetReceiversChainId] = useState<number>(84532);
+  const videoRef = useRef(null);
   const clientRef = useRef<PublicClient | null>(null);
+
+  const [isSponsored, setIsSponsored] = useState(false);
+  const [isFetchingVideo, setIsFetchingVideo] = useState(false);
+  const [isVideoReady, setIsVideoReady] = useState(false);
+  const [hasWatchedVideo, setHasWatchedVideo] = useState(false);
+  const [showSavings, setShowSavings] = useState(false);
 
   useEffect(() => {
     const setupClient = async () => {
@@ -40,6 +49,26 @@ export default function NewPostTab() {
     setupClient();
   }, []);
 
+
+  //  Handle sponsored video checkbox
+  const handleSponsoredChange = () => {
+    setIsSponsored(!isSponsored);
+    if (!isSponsored) {
+      setIsFetchingVideo(true);
+      setTimeout(() => {
+        setIsFetchingVideo(false);
+        setIsVideoReady(true);
+      }, Math.random() * 1000 + 2000); // Random time between 2-3 seconds
+    } else {
+      setIsVideoReady(false);
+      setHasWatchedVideo(false);
+      setShowSavings(false);
+    }
+  };
+  const handleVideoEnd = () => {
+    setHasWatchedVideo(true);
+    setShowSavings(true);
+  };
   const validateAddress = (address: string): `0x${string}` => {
     return address.startsWith("0x")
       ? (address as `0x${string}`)
@@ -149,115 +178,94 @@ export default function NewPostTab() {
 
   const renderStep = () => {
     switch (activeStep) {
-      case 1:
-        return (
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                From Address
-              </label>
-              <div className="relative">
-                <Wallet className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <input
-                  type="text"
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  value={from}
-                  onChange={(e) => setFrom(e.target.value)}
-                  placeholder="0x..."
-                />
-              </div>
+    case 1:
+      return (
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              From Address
+            </label>
+            <div className="relative">
+              <Wallet className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <input
+                type="text"
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+                placeholder="0x..."
+              />
             </div>
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                To Address
-              </label>
-              <div className="relative">
-                <Wallet className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <input
-                  type="text"
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  value={to}
-                  onChange={(e) => setTo(e.target.value)}
-                  placeholder="0x..."
-                />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              To Address
+            </label>
+            <div className="relative">
+              <Wallet className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <input
+                type="text"
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                placeholder="0x..."
+              />
+            </div>
+          </div>
+          <div className="relative">
+            <SelectWithIcons setChainName={setChainName} chainName={chainName} SetReceiversChainId={SetReceiversChainId} />
+          </div>
+
+        </div >
+      );
+    case 2:
+      return (
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Amount (USDC)
+            </label>
+            <div className="relative mt-2 rounded-md shadow-sm">
+              <input
+                type="number"
+                className="w-full pl-3 pr-12 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder="0.00"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                <span className="text-gray-500 sm:text-sm">USDC</span>
               </div>
             </div>
           </div>
-        );
-      case 2:
-        return (
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Amount (USDC)
+        </div>
+      );
+    case 3:
+      return (
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="validAfterZero"
+                checked={isValidAfterZero}
+                onChange={() => {
+                  setIsValidAfterZero(!isValidAfterZero);
+                  setValidAfter(isValidAfterZero ? "" : "0");
+                }}
+                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              />
+              <label
+                htmlFor="validAfterZero"
+                className="text-sm text-gray-700"
+              >
+                Valid immediately
               </label>
-              <div className="relative mt-2 rounded-md shadow-sm">
-                <input
-                  type="number"
-                  className="w-full pl-3 pr-12 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  value={value}
-                  onChange={(e) => setValue(e.target.value)}
-                  placeholder="0.00"
-                />
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                  <span className="text-gray-500 sm:text-sm">USDC</span>
-                </div>
-              </div>
             </div>
-          </div>
-        );
-      case 3:
-        return (
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="validAfterZero"
-                  checked={isValidAfterZero}
-                  onChange={() => {
-                    setIsValidAfterZero(!isValidAfterZero);
-                    setValidAfter(isValidAfterZero ? "" : "0");
-                  }}
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                />
-                <label
-                  htmlFor="validAfterZero"
-                  className="text-sm text-gray-700"
-                >
-                  Valid immediately
-                </label>
-              </div>
 
-              {!isValidAfterZero && (
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Valid After
-                  </label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                    <input
-                      type="datetime-local"
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      value={
-                        validAfter
-                          ? new Date(Number(validAfter) * 1000)
-                              .toISOString()
-                              .slice(0, 16)
-                          : ""
-                      }
-                      onChange={(e) =>
-                        setValidAfter(new Date(e.target.value).getTime() / 1000)
-                      }
-                      disabled={isValidAfterZero}
-                    />
-                  </div>
-                </div>
-              )}
-
+            {!isValidAfterZero && (
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
-                  Valid Before
+                  Valid After
                 </label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -265,64 +273,137 @@ export default function NewPostTab() {
                     type="datetime-local"
                     className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     value={
-                      validBefore
-                        ? new Date(Number(validBefore) * 1000)
-                            .toISOString()
-                            .slice(0, 16)
+                      validAfter
+                        ? new Date(Number(validAfter) * 1000)
+                          .toISOString()
+                          .slice(0, 16)
                         : ""
                     }
                     onChange={(e) =>
-                      setValidBefore(new Date(e.target.value).getTime() / 1000)
+                      setValidAfter(new Date(e.target.value).getTime() / 1000)
                     }
+                    disabled={isValidAfterZero}
                   />
                 </div>
               </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Valid Before
+              </label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <input
+                  type="datetime-local"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  value={
+                    validBefore
+                      ? new Date(Number(validBefore) * 1000)
+                        .toISOString()
+                        .slice(0, 16)
+                      : ""
+                  }
+                  onChange={(e) =>
+                    setValidBefore(new Date(e.target.value).getTime() / 1000)
+                  }
+                />
+              </div>
             </div>
           </div>
-        );
-      case 4:
-        return (
-          <div className="space-y-6">
-            <div className="bg-gray-50 rounded-lg p-6 space-y-4">
-              <div className="flex justify-between">
-                <span className="text-gray-600">From</span>
-                <span className="text-gray-900 font-medium">{from}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">To</span>
-                <span className="text-gray-900 font-medium">{to}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Amount</span>
-                <span className="text-gray-900 font-medium">{value} USDC</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Valid After</span>
-                <span className="text-gray-900 font-medium">
-                  {isValidAfterZero
-                    ? "Immediately"
-                    : new Date(Number(validAfter) * 1000).toLocaleString()}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Valid Before</span>
-                <span className="text-gray-900 font-medium">
-                  {new Date(Number(validBefore) * 1000).toLocaleString()}
-                </span>
-              </div>
-              {signature && (
-                <div className="mt-4">
-                  <span className="text-gray-600">Signature:</span>
-                  <p className="mt-1 text-xs text-gray-900 break-all font-mono">
-                    {signature}
-                  </p>
-                </div>
-              )}
+        </div>
+      );
+    case 4:
+      return (
+        <div className="space-y-6">
+          <div className="bg-gray-50 rounded-lg p-6 space-y-4">
+            <div className="flex justify-between">
+              <span className="text-gray-600">From</span>
+              <span className="text-gray-900 font-medium">{from}</span>
             </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">To</span>
+              <span className="text-gray-900 font-medium">{to}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Amount</span>
+              <span className="text-gray-900 font-medium">{value} USDC</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Valid After</span>
+              <span className="text-gray-900 font-medium">
+                {isValidAfterZero
+                  ? "Immediately"
+                  : new Date(Number(validAfter) * 1000).toLocaleString()}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Valid Before</span>
+              <span className="text-gray-900 font-medium">
+                {new Date(Number(validBefore) * 1000).toLocaleString()}
+              </span>
+            </div>
+            {signature && (
+              <div className="mt-4">
+                <span className="text-gray-600">Signature:</span>
+                <p className="mt-1 text-xs text-gray-900 break-all font-mono">
+                  {signature}
+                </p>
+              </div>
+            )}
           </div>
-        );
-      default:
-        return null;
+
+          <div>
+            <label className="flex items-center space-x-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isSponsored}
+                onChange={handleSponsoredChange}
+                className="form-checkbox h-5 w-5 text-gray-600"
+              />
+              <span className="text-gray-700">Sponsored Transaction</span>
+            </label>
+          </div>
+
+          {isFetchingVideo && (
+            <p className="text-sm text-gray-600 animate-pulse">
+              Fetching sponsored video...
+            </p>
+          )}
+
+          {isVideoReady && !hasWatchedVideo && (
+            <div className="mt-4">
+              <label
+                htmlFor="amount"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Sponsored Video
+              </label>
+              <video
+                ref={videoRef}
+                className="w-full rounded-md"
+                controls
+                onEnded={handleVideoEnd}
+              >
+                <source src="/images/test.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          )}
+
+          {showSavings && (
+            <div
+              className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md"
+              role="alert"
+            >
+              <p className="font-bold">Savings</p>
+              <p>The transaction gas fees will be paid by the Sponsor!</p>
+            </div>
+          )}
+        </div>
+      );
+    default:
+      return null;
     }
   };
 
@@ -346,30 +427,27 @@ export default function NewPostTab() {
                 {steps.map((step, index) => (
                   <div key={step.number} className="flex items-center">
                     <div
-                      className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                        activeStep >= step.number
-                          ? "bg-indigo-600 text-white"
-                          : "bg-gray-200 text-gray-600"
-                      }`}
+                      className={`flex items-center justify-center w-8 h-8 rounded-full ${activeStep >= step.number
+                        ? "bg-indigo-600 text-white"
+                        : "bg-gray-200 text-gray-600"
+                        }`}
                     >
                       {step.number}
                     </div>
                     <span
-                      className={`ml-2 text-sm hidden sm:block ${
-                        activeStep >= step.number
-                          ? "text-indigo-600"
-                          : "text-gray-500"
-                      }`}
+                      className={`ml-2 text-sm hidden sm:block ${activeStep >= step.number
+                        ? "text-indigo-600"
+                        : "text-gray-500"
+                        }`}
                     >
                       {step.title}
                     </span>
                     {index < steps.length - 1 && (
                       <div
-                        className={`h-0.5 w-12 mx-2 ${
-                          activeStep > step.number
-                            ? "bg-indigo-600"
-                            : "bg-gray-200"
-                        }`}
+                        className={`h-0.5 w-12 mx-2 ${activeStep > step.number
+                          ? "bg-indigo-600"
+                          : "bg-gray-200"
+                          }`}
                       />
                     )}
                   </div>
@@ -402,13 +480,20 @@ export default function NewPostTab() {
               ) : (
                 <button
                   onClick={handleSign}
-                  disabled={isLoading || !isConnected}
-                  className="ml-auto px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center disabled:opacity-50"
+                  className={`ml-auto px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center disabled:opacity-50 ${isLoading || (isSponsored && !hasWatchedVideo)
+                    ? "opacity-75 cursor-not-allowed"
+                    : ""
+                    }`}
+                  disabled={!isConnected || isLoading || (isSponsored && !hasWatchedVideo)}
                 >
                   {isLoading ? (
-                    <span>Processing...</span>
+                    "Loading..."
+                  ) : isSponsored && !hasWatchedVideo ? (
+                    "Watch Full Video"
                   ) : (
-                    <span>Sign Transaction</span>
+                    <>
+                      <span className="ml-2">Sign Transaction</span>
+                    </>
                   )}
                 </button>
               )}
