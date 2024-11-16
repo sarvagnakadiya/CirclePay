@@ -23,6 +23,8 @@ export async function POST(request: NextRequest) {
       executed,
       sign,
       nonce,
+      destinationChain,
+      sponsored,
     } = body;
 
     // Check for required fields
@@ -35,7 +37,9 @@ export async function POST(request: NextRequest) {
       sign === undefined ||
       validAfter === undefined ||
       validBefore === undefined ||
-      nonce === undefined
+      nonce === undefined ||
+      destinationChain === undefined ||
+      sponsored === undefined
     ) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -55,6 +59,8 @@ export async function POST(request: NextRequest) {
       executed: executed || false,
       sign,
       nonce,
+      destinationChain,
+      sponsored,
       initiateDate: new Date(),
     };
 

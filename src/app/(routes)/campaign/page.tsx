@@ -17,7 +17,10 @@ import { getChainId } from "@wagmi/core";
 import { config } from "@/app/utils/config";
 import { Address, formatEther, pad, PublicClient } from "viem";
 import { useAccount, useWriteContract } from "wagmi";
-import { getContractAddress } from "@/app/utils/contractAddresses";
+import {
+  CIRCLEPAY_BASE,
+  getContractAddress,
+} from "@/app/utils/contractAddresses";
 
 interface Campaign {
   id: string;
@@ -94,6 +97,7 @@ const AdCampaignDashboard: React.FC = () => {
 
   const [showAddReserve, setShowAddReserve] = useState<string | null>(null);
   const [chainId, setChainId] = useState<number>(0);
+  const [initialFund, setInitialFund] = useState<number>(0);
   const clientRef = useRef<PublicClient | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const { address, isConnected } = useAccount();
@@ -155,6 +159,7 @@ const AdCampaignDashboard: React.FC = () => {
   }, []);
 
   const handleCreateCampaign = async () => {
+    console.log("ander aaya");
     if (!isConnected) {
       alert("Please connect your account to participate.");
       return;
@@ -166,11 +171,12 @@ const AdCampaignDashboard: React.FC = () => {
       }
       setIsParticipating(true);
       const tx = await writeContractAsync({
-        address: getContractAddress(chainId) as Address,
+        address: CIRCLEPAY_BASE,
         account: address,
         abi: contractABI.abi,
         functionName: "registerCampaign",
         args: ["abctestid"],
+        value: BigInt(initialFund),
       });
 
       const receipt = await clientRef.current.waitForTransactionReceipt({
@@ -379,10 +385,12 @@ const AdCampaignDashboard: React.FC = () => {
             </label>
             <div className="flex gap-2">
               <Input
+                onChange={(e) => setInitialFund(Number(e.target.value) || 0)} // Convert to number, default to 0 if invalid
                 type="number"
                 placeholder="Enter amount"
                 className="flex-1"
               />
+
               {/* <Button>
                 <Plus size={18} />
                 Add Reserve
