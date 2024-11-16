@@ -11,18 +11,18 @@ const TabBar = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 1:
-        return <SponsorTab />;
-      case 2:
-        return <SearchTab />;
-      case 3:
-        return <NewPostTab />;
-      case 4:
-        return <ReceivedTab />;
-      case 5:
-        return <ProfileTab />;
-      default:
-        return <NewPostTab />;
+    case 1:
+      return <SponsorTab setActiveTab={setActiveTab} />;
+    case 2:
+      return <SearchTab />;
+    case 3:
+      return <NewPostTab />;
+    case 4:
+      return <ReceivedTab />;
+    case 5:
+      return <ProfileTab />;
+    default:
+      return <NewPostTab />;
     }
   };
 
