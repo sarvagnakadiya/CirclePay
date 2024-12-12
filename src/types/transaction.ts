@@ -11,6 +11,5 @@ export interface Transaction {
   executed: boolean;
   sign: string;
   destinationChain: number;
-  sponsored: boolean;
   initiateDate: string;
 }

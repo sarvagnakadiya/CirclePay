@@ -35,14 +35,7 @@ export default function NewPostTab() {
   const [chainId, setChainId] = useState<number>(0);
   const [chainName, setChainName] = useState<string>("base");
   const [receiversChainId, SetReceiversChainId] = useState<number>(84532);
-  const videoRef = useRef(null);
   const clientRef = useRef<PublicClient | null>(null);
-
-  const [isSponsored, setIsSponsored] = useState(false);
-  const [isFetchingVideo, setIsFetchingVideo] = useState(false);
-  const [isVideoReady, setIsVideoReady] = useState(false);
-  const [hasWatchedVideo, setHasWatchedVideo] = useState(false);
-  const [showSavings, setShowSavings] = useState(false);
 
   useEffect(() => {
     const setupClient = async () => {
@@ -67,25 +60,6 @@ export default function NewPostTab() {
     }
   };
 
-  //  Handle sponsored video checkbox
-  const handleSponsoredChange = () => {
-    setIsSponsored(!isSponsored);
-    if (!isSponsored) {
-      setIsFetchingVideo(true);
-      setTimeout(() => {
-        setIsFetchingVideo(false);
-        setIsVideoReady(true);
-      }, Math.random() * 1000 + 2000);
-    } else {
-      setIsVideoReady(false);
-      setHasWatchedVideo(false);
-      setShowSavings(false);
-    }
-  };
-  const handleVideoEnd = () => {
-    setHasWatchedVideo(true);
-    setShowSavings(true);
-  };
   const validateAddress = (address: string): `0x${string}` => {
     return address.startsWith("0x")
       ? (address as `0x${string}`)
@@ -173,7 +147,6 @@ export default function NewPostTab() {
           sign: signature,
           nonce: theNonce.toString(),
           destinationChain: receiversChainId,
-          sponsored: showSavings,
         });
 
         console.log("API response:", response.data);
@@ -376,54 +349,6 @@ export default function NewPostTab() {
                 </div>
               )}
             </div>
-
-            <div>
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isSponsored}
-                  onChange={handleSponsoredChange}
-                  className="form-checkbox h-5 w-5 text-gray-600"
-                />
-                <span className="text-gray-700">Sponsored Transaction</span>
-              </label>
-            </div>
-
-            {isFetchingVideo && (
-              <p className="text-sm text-gray-600 animate-pulse">
-                Fetching sponsored video...
-              </p>
-            )}
-
-            {isVideoReady && !hasWatchedVideo && (
-              <div className="mt-4">
-                <label
-                  htmlFor="amount"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Sponsored Video
-                </label>
-                <video
-                  ref={videoRef}
-                  className="w-full rounded-md"
-                  controls
-                  onEnded={handleVideoEnd}
-                >
-                  <source src="/images/test.mp4" type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
-              </div>
-            )}
-
-            {showSavings && (
-              <div
-                className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md"
-                role="alert"
-              >
-                <p className="font-bold">Savings</p>
-                <p>The transaction gas fees will be paid by the Sponsor!</p>
-              </div>
-            )}
           </div>
         );
       default:
@@ -509,20 +434,12 @@ export default function NewPostTab() {
                 <button
                   onClick={handleSign}
                   className={`ml-auto px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center disabled:opacity-50 ${
-                    isLoading || (isSponsored && !hasWatchedVideo)
-                      ? "opacity-75 cursor-not-allowed"
-                      : ""
+                    isLoading ? "opacity-75 cursor-not-allowed" : ""
                   }`}
-                  disabled={
-                    !isConnected ||
-                    isLoading ||
-                    (isSponsored && !hasWatchedVideo)
-                  }
+                  disabled={!isConnected || isLoading}
                 >
                   {isLoading ? (
                     "Loading..."
-                  ) : isSponsored && !hasWatchedVideo ? (
-                    "Watch Full Video"
                   ) : (
                     <>
                       <span className="ml-2">Sign Transaction</span>
