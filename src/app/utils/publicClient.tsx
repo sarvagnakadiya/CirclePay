@@ -1,14 +1,6 @@
 import { getPublicClient } from "@wagmi/core";
 import { config } from "@/app/utils/config";
-import {
-  mainnet,
-  base,
-  arbitrum,
-  optimism,
-  polygon,
-  arbitrumSepolia,
-  baseSepolia,
-} from "@wagmi/core/chains";
+import { mainnet, base, arbitrum, optimism, polygon } from "@wagmi/core/chains";
 
 import { type Chain } from "viem";
 export const local = {
@@ -29,8 +21,6 @@ type AllowedChainIds =
   | typeof base.id
   | typeof optimism.id
   | typeof polygon.id
-  | typeof arbitrumSepolia.id
-  | typeof baseSepolia.id
   | typeof mainnet.id;
 
 // Utility function to initialize a client for a specific chain
@@ -46,8 +36,6 @@ export const initializeClientsForAllChains = () => {
   const optimismClient = initializeClient(optimism.id);
   const polygonClient = initializeClient(polygon.id);
   const mainnetClient = initializeClient(mainnet.id);
-  const arbitrumSepoliaClient = initializeClient(arbitrumSepolia.id);
-  const baseSepoliaClient = initializeClient(baseSepolia.id);
 
   return {
     polygonClient,
@@ -55,7 +43,5 @@ export const initializeClientsForAllChains = () => {
     baseClient,
     mainnetClient,
     optimismClient,
-    arbitrumSepoliaClient,
-    baseSepoliaClient,
   };
 };
