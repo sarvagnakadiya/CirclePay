@@ -12,4 +12,5 @@ export interface Transaction {
   sign: string;
   destinationChain: number;
   initiateDate: string;
+  transactionHash: string;
 }

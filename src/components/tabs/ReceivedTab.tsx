@@ -8,13 +8,18 @@ import {
   Wallet,
   Loader2,
   CheckCircle,
+  ExternalLink,
+  Play,
 } from "lucide-react";
 
 import contractABI from "@/usdc.json";
 import { initializeClient } from "@/app/utils/publicClient";
 import { getChainId } from "@wagmi/core";
 import { config } from "@/app/utils/config";
-import { getContractAddress } from "@/app/utils/contractAddresses";
+import {
+  getContractAddress,
+  getEtherscanBaseUrl,
+} from "@/app/utils/contractAddresses";
 import { Transaction } from "@/types/transaction";
 
 const ReceivedTab: React.FC = () => {
@@ -90,7 +95,7 @@ const ReceivedTab: React.FC = () => {
       }
       setIsParticipating(true);
       const tx = await writeContractAsync({
-        address: getContractAddress(chainId) as Address,
+        address: (await getContractAddress(chainId)) as Address,
         account: address,
         abi: contractABI,
         functionName: "transferWithAuthorization",
@@ -144,13 +149,14 @@ const ReceivedTab: React.FC = () => {
   };
 
   const formatAddress = (address: string) => {
+    if (!address) return "N/A"; // Return a fallback value if address is undefined
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
   const formatAmount = (amount: string | number) => {
     return (Number(amount) / 1_000_000).toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 4,
     });
   };
 
@@ -267,55 +273,77 @@ const ReceivedTab: React.FC = () => {
             )
               .slice()
               .reverse()
-              .map((transaction) => (
-                <div
-                  key={transaction._id}
-                  className={`bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-200
-                    ${
-                      processingId === transaction._id
-                        ? "ring-2 ring-blue-500"
-                        : "hover:shadow-md"
-                    }`}
-                >
-                  <div className="p-6 space-y-6">
-                    {/* Header */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
-                          Chain ID: {transaction.chainId}
-                        </span>
-                        {transaction.executed && (
-                          <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                            <CheckCircle className="w-4 h-4" />
-                            Executed
-                          </span>
-                        )}
-                      </div>
-                      <time className="text-sm text-gray-500">
-                        {new Date(
-                          transaction.initiateDate
-                        ).toLocaleDateString()}{" "}
-                        at{" "}
-                        {new Date(
-                          transaction.initiateDate
-                        ).toLocaleTimeString()}
-                      </time>
-                    </div>
+              .map((transaction) => {
+                // Determine chain display text
+                const chainDisplay =
+                  transaction.chainId === transaction.destinationChain
+                    ? `Chain ID: ${transaction.chainId}`
+                    : `Chain: ${transaction.chainId} → ${transaction.destinationChain}`;
 
-                    {/* Transaction Details */}
-                    <div className="bg-gray-50 rounded-lg p-4">
+                return (
+                  <div
+                    key={transaction._id}
+                    className={`bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-200
+            ${
+              processingId === transaction._id
+                ? "ring-2 ring-blue-500"
+                : "hover:shadow-md"
+            }`}
+                  >
+                    <div className="p-6 space-y-6">
+                      {/* Header */}
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-white p-2 rounded-full shadow-sm">
-                            <Wallet className="w-5 h-5 text-gray-500" />
+                        <div className="flex items-center gap-2">
+                          <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
+                            {chainDisplay}
+                          </span>
+                          {transaction.executed && (
+                            <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
+                              <CheckCircle className="w-4 h-4" />
+                              Executed
+                            </span>
+                          )}
+                        </div>
+                        <time className="text-sm text-gray-500">
+                          {new Date(
+                            transaction.initiateDate
+                          ).toLocaleDateString()}{" "}
+                          at{" "}
+                          {new Date(
+                            transaction.initiateDate
+                          ).toLocaleTimeString()}
+                        </time>
+                      </div>
+
+                      {/* Transaction Details */}
+                      <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-white p-2 rounded-full shadow-sm">
+                              <Wallet className="w-5 h-5 text-gray-500" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500">From</p>
+                              <div className="flex items-center gap-2">
+                                <code className="font-mono font-medium text-gray-900">
+                                  {formatAddress(transaction.sender)}
+                                </code>
+                                {transaction.sender === address && (
+                                  <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs">
+                                    You
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
+                          <ArrowRight className="w-5 h-5 text-gray-400" />
                           <div>
-                            <p className="text-sm text-gray-500">From</p>
+                            <p className="text-sm text-gray-500">To</p>
                             <div className="flex items-center gap-2">
                               <code className="font-mono font-medium text-gray-900">
-                                {formatAddress(transaction.sender)}
+                                {formatAddress(transaction.receiver)}
                               </code>
-                              {transaction.sender === address && (
+                              {transaction.receiver === address && (
                                 <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs">
                                   You
                                 </span>
@@ -323,67 +351,70 @@ const ReceivedTab: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                        <ArrowRight className="w-5 h-5 text-gray-400" />
+                      </div>
+
+                      {/* Amount and Action */}
+                      <div className="flex justify-between items-center pt-4 border-t">
                         <div>
-                          <p className="text-sm text-gray-500">To</p>
-                          <div className="flex items-center gap-2">
-                            <code className="font-mono font-medium text-gray-900">
-                              {formatAddress(transaction.receiver)}
-                            </code>
-                            {transaction.receiver === address && (
-                              <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs">
-                                You
-                              </span>
-                            )}
+                          <p className="text-sm text-gray-500">Amount</p>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-2xl font-bold text-gray-900">
+                              {formatAmount(transaction.amount)}
+                            </span>
+                            <span className="text-gray-500">USDC</span>
                           </div>
                         </div>
-                      </div>
-                    </div>
+                        {!transaction.executed && (
+                          <button
+                            onClick={() => handleExecute(transaction)}
+                            disabled={isParticipating}
+                            className={`px-6 py-3 rounded-lg font-medium transition-all
+                    ${
+                      isParticipating && processingId === transaction._id
+                        ? "bg-blue-100 text-blue-400 cursor-not-allowed"
+                        : "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800"
+                    }`}
+                          >
+                            {isParticipating &&
+                            processingId === transaction._id ? (
+                              <span className="flex items-center gap-2">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Processing
+                              </span>
+                            ) : (
+                              <button className="flex items-center gap-2">
+                                <Play className="w-5 h-5" />
+                                Execute
+                              </button>
+                            )}
+                          </button>
+                        )}
 
-                    {/* Amount and Action */}
-                    <div className="flex justify-between items-center pt-4 border-t">
-                      <div>
-                        <p className="text-sm text-gray-500">Amount</p>
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-2xl font-bold text-gray-900">
-                            {formatAmount(transaction.amount)}
-                          </span>
-                          <span className="text-gray-500">USDC</span>
-                        </div>
+                        {/* Transaction Hash */}
+                        {transaction.executed && chainId && (
+                          <div className="flex flex-col items-end gap-1">
+                            <div className="flex items-center gap-1 text-gray-400">
+                              <CheckCircle className="w-5 h-5 text-green-600" />
+                              <a
+                                href={`${getEtherscanBaseUrl(
+                                  transaction.chainId
+                                )}/tx/${transaction.transactionHash}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-gray-500 hover:text-blue-500 transition-colors flex items-center gap-1 opacity-70 hover:opacity-100"
+                              >
+                                <span className="text-[10px] font-mono bg-gray-100 px-2 py-1 rounded-md shadow-sm">
+                                  {formatAddress(transaction.transactionHash)}
+                                </span>
+                              </a>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      {!transaction.executed && (
-                        <button
-                          onClick={() => handleExecute(transaction)}
-                          disabled={isParticipating}
-                          className={`px-6 py-3 rounded-lg font-medium transition-all
-                            ${
-                              isParticipating &&
-                              processingId === transaction._id
-                                ? "bg-blue-100 text-blue-400 cursor-not-allowed"
-                                : "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800"
-                            }`}
-                        >
-                          {isParticipating &&
-                          processingId === transaction._id ? (
-                            <span className="flex items-center gap-2">
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              Processing
-                            </span>
-                          ) : (
-                            "Execute Transaction"
-                          )}
-                        </button>
-                      )}
-                      {transaction.executed && (
-                        <div className="flex items-center gap-2 text-green-600">
-                          <CheckCircle className="w-5 h-5" />
-                          <span className="font-medium">Completed</span>
-                        </div>
-                      )}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
           </div>
         )}
       </div>

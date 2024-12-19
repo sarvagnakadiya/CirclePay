@@ -2,6 +2,7 @@ import { getPublicClient } from "@wagmi/core";
 import { config } from "@/app/utils/config";
 import {
   mainnet,
+  base,
   arbitrum,
   optimism,
   polygon,
@@ -25,6 +26,7 @@ export const local = {
 // Define a union type of allowed chain IDs
 type AllowedChainIds =
   | typeof arbitrum.id
+  | typeof base.id
   | typeof optimism.id
   | typeof polygon.id
   | typeof arbitrumSepolia.id
@@ -40,6 +42,7 @@ export const initializeClient = (chainId: AllowedChainIds) => {
 // Example usage: initializing clients for different chains
 export const initializeClientsForAllChains = () => {
   const arbitrumClient = initializeClient(arbitrum.id);
+  const baseClient = initializeClient(base.id);
   const optimismClient = initializeClient(optimism.id);
   const polygonClient = initializeClient(polygon.id);
   const mainnetClient = initializeClient(mainnet.id);
@@ -49,6 +52,7 @@ export const initializeClientsForAllChains = () => {
   return {
     polygonClient,
     arbitrumClient,
+    baseClient,
     mainnetClient,
     optimismClient,
     arbitrumSepoliaClient,

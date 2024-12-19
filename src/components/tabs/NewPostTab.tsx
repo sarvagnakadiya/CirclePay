@@ -84,7 +84,7 @@ export default function NewPostTab() {
     setIsLoading(true);
     const chainId = getChainId(config);
     console.log(chainId);
-    console.log(getContractAddress(chainId) as Address);
+    console.log((await getContractAddress(chainId)) as Address);
 
     try {
       const theNonce = await generateNonce();
@@ -118,7 +118,7 @@ export default function NewPostTab() {
           name: "USDC",
           version: "2",
           chainId: BigInt(chainId),
-          verifyingContract: getContractAddress(chainId) as Address,
+          verifyingContract: (await getContractAddress(chainId)) as Address,
         },
         primaryType: "TransferWithAuthorization",
         message: {
@@ -170,6 +170,40 @@ export default function NewPostTab() {
     { number: 4, title: "Review" },
   ];
 
+  // Validation functions for each step
+  const isStep1Valid = () => {
+    return from.trim() !== "" && to.trim() !== "";
+  };
+
+  const isStep2Valid = () => {
+    return value.trim() !== "" && parseFloat(value) > 0;
+  };
+
+  const isStep3Valid = () => {
+    // If isValidAfterZero is true, we only need to check validBefore
+    // If isValidAfterZero is false, we need to check both validAfter and validBefore
+    return validBefore !== "" && (isValidAfterZero || validAfter !== "");
+  };
+
+  const handleNextStep = () => {
+    switch (activeStep) {
+      case 1:
+        if (isStep1Valid()) {
+          setActiveStep(activeStep + 1);
+        }
+        break;
+      case 2:
+        if (isStep2Valid()) {
+          setActiveStep(activeStep + 1);
+        }
+        break;
+      case 3:
+        if (isStep3Valid()) {
+          setActiveStep(activeStep + 1);
+        }
+        break;
+    }
+  };
   const renderStep = () => {
     switch (activeStep) {
       case 1:
@@ -423,9 +457,19 @@ export default function NewPostTab() {
               )}
               {activeStep < 4 ? (
                 <button
-                  onClick={() => setActiveStep(activeStep + 1)}
-                  className="ml-auto px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center"
-                  disabled={!isConnected}
+                  onClick={handleNextStep}
+                  className={`ml-auto px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center ${
+                    ((activeStep === 1 && !isStep1Valid()) ||
+                      (activeStep === 2 && !isStep2Valid()) ||
+                      (activeStep === 3 && !isStep3Valid())) &&
+                    "opacity-50 cursor-not-allowed"
+                  }`}
+                  disabled={
+                    !isConnected ||
+                    (activeStep === 1 && !isStep1Valid()) ||
+                    (activeStep === 2 && !isStep2Valid()) ||
+                    (activeStep === 3 && !isStep3Valid())
+                  }
                 >
                   Next
                   <ArrowRight className="ml-2 h-4 w-4" />

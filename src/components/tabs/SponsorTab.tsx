@@ -97,7 +97,7 @@ const SponsorTab: React.FC<SponsorTabProps> = ({ setActiveTab }) => {
     validBefore: number,
     transactionId: string
   ) => {
-    console.log("idhar kyu aaya");
+    console.log("same chain transfer: calling transferWithAuthorization");
     if (!isConnected) {
       alert("Please connect your account to participate.");
       return;
@@ -118,7 +118,7 @@ const SponsorTab: React.FC<SponsorTabProps> = ({ setActiveTab }) => {
       setIsParticipating(true);
 
       const tx = await writeContractAsync({
-        address: getContractAddress(chainId) as Address,
+        address: (await getContractAddress(chainId)) as Address,
         account: address,
         abi: contractABI,
         functionName: "transferWithAuthorization",
@@ -132,9 +132,6 @@ const SponsorTab: React.FC<SponsorTabProps> = ({ setActiveTab }) => {
           sign,
         ],
       });
-
-      const theUrl = `https://base-sepolia.blockscout.com/tx/${tx}`;
-      setblockScoutUrl(theUrl);
 
       const receipt = await clientRef.current.waitForTransactionReceipt({
         hash: tx,
@@ -234,6 +231,7 @@ const SponsorTab: React.FC<SponsorTabProps> = ({ setActiveTab }) => {
     }
   };
 
+  // main function to call either handleTransfer(same chain) OR handleCrossChainTransfer(cross chain)
   const handleExecute = (transaction: Transaction) => {
     console.log(transaction.chainId);
     console.log(transaction.destinationChain);

@@ -158,46 +158,70 @@ const ProfileTab: React.FC = () => {
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2">
-            {filteredTransactions.map((transaction) => (
-              <div
-                key={transaction._id}
-                className="bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md"
-              >
-                <div className="p-6 space-y-6">
-                  {/* Header */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
-                        Chain ID: {transaction.chainId}
-                      </span>
-                      {transaction.executed && (
-                        <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                          <CheckCircle className="w-4 h-4" />
-                          Executed
-                        </span>
-                      )}
-                    </div>
-                    <time className="text-sm text-gray-500">
-                      {new Date(transaction.initiateDate).toLocaleDateString()}{" "}
-                      at{" "}
-                      {new Date(transaction.initiateDate).toLocaleTimeString()}
-                    </time>
-                  </div>
-
-                  {/* Transaction Details */}
-                  <div className="bg-gray-50 rounded-lg p-4">
+            {filteredTransactions
+              .slice()
+              .reverse()
+              .map((transaction) => (
+                <div
+                  key={transaction._id}
+                  className="bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md"
+                >
+                  <div className="p-6 space-y-6">
+                    {/* Header */}
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-white p-2 rounded-full shadow-sm">
-                          <Wallet className="w-5 h-5 text-gray-500" />
+                      <div className="flex items-center gap-2">
+                        <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
+                          Chain ID: {transaction.chainId}
+                        </span>
+                        {transaction.executed && (
+                          <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
+                            <CheckCircle className="w-4 h-4" />
+                            Executed
+                          </span>
+                        )}
+                      </div>
+                      <time className="text-sm text-gray-500">
+                        {new Date(
+                          transaction.initiateDate
+                        ).toLocaleDateString()}{" "}
+                        at{" "}
+                        {new Date(
+                          transaction.initiateDate
+                        ).toLocaleTimeString()}
+                      </time>
+                    </div>
+
+                    {/* Transaction Details */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-white p-2 rounded-full shadow-sm">
+                            <Wallet className="w-5 h-5 text-gray-500" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">From</p>
+                            <div className="flex items-center gap-2">
+                              <code className="font-mono font-medium text-gray-900">
+                                {formatAddress(transaction.sender)}
+                              </code>
+                              {transaction.sender === address && (
+                                <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs">
+                                  You
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <ArrowRight className="w-5 h-5 text-gray-400" />
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">From</p>
+                          <p className="text-sm text-gray-500">To</p>
                           <div className="flex items-center gap-2">
                             <code className="font-mono font-medium text-gray-900">
-                              {formatAddress(transaction.sender)}
+                              {formatAddress(transaction.receiver)}
                             </code>
-                            {transaction.sender === address && (
+                            {transaction.receiver === address && (
                               <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs">
                                 You
                               </span>
@@ -205,53 +229,36 @@ const ProfileTab: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <ArrowRight className="w-5 h-5 text-gray-400" />
-                      </div>
+                    </div>
+
+                    {/* Amount and Status */}
+                    <div className="flex justify-between items-center pt-4 border-t">
                       <div>
-                        <p className="text-sm text-gray-500">To</p>
-                        <div className="flex items-center gap-2">
-                          <code className="font-mono font-medium text-gray-900">
-                            {formatAddress(transaction.receiver)}
-                          </code>
-                          {transaction.receiver === address && (
-                            <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs">
-                              You
-                            </span>
-                          )}
+                        <p className="text-sm text-gray-500">Amount</p>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-bold text-gray-900">
+                            {formatAmount(transaction.amount)}
+                          </span>
+                          <span className="text-sm font-medium text-gray-400">
+                            USDC
+                          </span>
                         </div>
                       </div>
+                      {!transaction.executed && (
+                        <button
+                          onClick={() =>
+                            handleExecuteTransaction(transaction._id)
+                          }
+                          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-sm"
+                        >
+                          <Play className="w-5 h-5" />
+                          Execute
+                        </button>
+                      )}
                     </div>
-                  </div>
-
-                  {/* Amount and Status */}
-                  <div className="flex justify-between items-center pt-4 border-t">
-                    <div>
-                      <p className="text-sm text-gray-500">Amount</p>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-bold text-gray-900">
-                          {formatAmount(transaction.amount)}
-                        </span>
-                        <span className="text-sm font-medium text-gray-400">
-                          USDC
-                        </span>
-                      </div>
-                    </div>
-                    {!transaction.executed && (
-                      <button
-                        onClick={() =>
-                          handleExecuteTransaction(transaction._id)
-                        }
-                        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-sm"
-                      >
-                        <Play className="w-5 h-5" />
-                        Execute
-                      </button>
-                    )}
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         )}
       </div>
