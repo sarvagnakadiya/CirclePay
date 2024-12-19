@@ -43,6 +43,7 @@ app.frame("/:id", async (c) => {
   return c.res({
     image: `https://sarvagna.vercel.app/assets/1-0b86c9e7.png`,
     intents: [
+      // eslint-disable-next-line react/jsx-key
       <Button.Transaction target={`/execute/${id.id}`}>
         Execute
       </Button.Transaction>,
